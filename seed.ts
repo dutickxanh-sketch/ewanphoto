@@ -1,0 +1,9 @@
+import { PrismaClient } from "@prisma/client";
+import bcrypt from "bcryptjs";
+const db = new PrismaClient();
+async function main(){
+ const email=process.env.SEED_ADMIN_EMAIL; const password=process.env.SEED_ADMIN_PASSWORD;
+ if(email && password){ const passwordHash=await bcrypt.hash(password,12); await db.user.upsert({where:{email},update:{passwordHash,role:"ADMIN"},create:{email,passwordHash,username:email.split("@")[0].replace(/[^a-z0-9_]/gi,"").slice(0,20)||"admin",name:"Community Admin",role:"ADMIN"}}); console.log("Seed admin ensured:",email); }
+ const count=await db.post.count(); if(count===0){ const demo=await db.user.upsert({where:{email:"creator@example.com"},update:{},create:{email:"creator@example.com",username:"studiojun",name:"Jun Park",passwordHash:await bcrypt.hash("DemoPassword123!",12),bio:"Visual storyteller & digital artist."}}); await db.post.createMany({data:[{authorId:demo.id,caption:"Chasing the last light of the day. A little reminder to slow down and notice the details.",imageUrl:"https://images.unsplash.com/photo-1470770841072-f978cf4d019e?auto=format&fit=crop&w=1200&q=85",tags:["landscape","goldenhour","photography"]},{authorId:demo.id,caption:"Color studies from a quiet Sunday — warm neutrals, soft texture, and room to breathe.",imageUrl:"https://images.unsplash.com/photo-1490481651871-ab68de25d43d?auto=format&fit=crop&w=1200&q=85",tags:["design","colorstudy"]},{authorId:demo.id,caption:"Finding beauty in the geometry of the everyday.",imageUrl:"https://images.unsplash.com/photo-1518005020951-eccb494ad742?auto=format&fit=crop&w=1200&q=85",tags:["architecture","minimal"]}]}); console.log("Demo posts created."); }
+}
+main().finally(()=>db.$disconnect());
